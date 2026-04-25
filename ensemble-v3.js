@@ -17,6 +17,10 @@ var PERMUTATIONS = [];
 var CURRENT_IDX = -1;
 var SECS_PER_PERM = 0;
 var COUNTDOWN = 0;
+var COUNTDOWN_START = 10;  // pre-start countdown duration (seconds)
+var PRE_START = false;     // true while pre-start countdown is running
+var PRE_COUNTDOWN = 0;     // current pre-start countdown value
+var SECTION_STARTED = false; // true once the first section clock has begun
 
 function list() {
 	var row = arguments[0];
@@ -40,6 +44,10 @@ function setmaxgroupmusic(n) {
 
 function setmaxgroupdance(n) {
 	MAX_GROUP_DANCE = Math.max(1, parseInt(n));
+}
+
+function setcountdownstart(n) {
+	COUNTDOWN_START = Math.max(1, parseInt(n));
 }
 
 function setduration(n) {
@@ -68,6 +76,8 @@ function generate() {
 	SECS_PER_PERM = Math.max(1, Math.round(TOTAL_SECS / PERMUTATIONS.length));
 	CURRENT_IDX = 0;
 	COUNTDOWN = SECS_PER_PERM;
+	SECTION_STARTED = false;
+	PRE_START = false;
 
 	post("--- " + PERMUTATIONS.length + " sections, " + SECS_PER_PERM + "s each ---\n");
 	PERMUTATIONS.forEach(function(p, i) {
@@ -75,6 +85,7 @@ function generate() {
 	});
 
 	displayCurrent();
+	outlet(1, COUNTDOWN_START);  // show the pre-start countdown value in the number box
 	outlet(3, PERMUTATIONS.length + " sections, " + SECS_PER_PERM + "s each");
 }
 
@@ -182,8 +193,36 @@ function updateNextMover() {
 	outlet(2, moverTexts.length > 0 ? moverTexts.join(", ") : "no change");
 }
 
+// Called by Run toggle (via prepend run) with value 1 (on) or 0 (off)
+function run(n) {
+	if (!n) {
+		PRE_START = false;
+		return;
+	}
+	// Toggle turned on: start pre-start countdown only if section hasn't begun yet
+	if (CURRENT_IDX >= 0 && PERMUTATIONS.length > 0 && !SECTION_STARTED) {
+		PRE_START = true;
+		PRE_COUNTDOWN = COUNTDOWN_START;
+		outlet(1, PRE_COUNTDOWN);
+		outlet(3, "Starting in " + PRE_COUNTDOWN + "...");
+	}
+}
+
 function tick() {
 	if (CURRENT_IDX < 0 || PERMUTATIONS.length === 0) return;
+	if (PRE_START) {
+		PRE_COUNTDOWN--;
+		outlet(1, PRE_COUNTDOWN);
+		if (PRE_COUNTDOWN <= 0) {
+			PRE_START = false;
+			SECTION_STARTED = true;
+			COUNTDOWN = SECS_PER_PERM;
+			displayCurrent();
+			outlet(3, "Section 1 / " + PERMUTATIONS.length);
+		}
+		return;
+	}
+	if (!SECTION_STARTED) return;
 	COUNTDOWN--;
 	outlet(1, COUNTDOWN);
 	if (COUNTDOWN <= 0) nextSection();
@@ -223,6 +262,9 @@ function reset() {
 	if (PERMUTATIONS.length === 0) return;
 	CURRENT_IDX = 0;
 	COUNTDOWN = SECS_PER_PERM;
+	SECTION_STARTED = false;
+	PRE_START = false;
 	displayCurrent();
+	outlet(1, COUNTDOWN_START);
 	outlet(3, "Reset to section 1");
 }
