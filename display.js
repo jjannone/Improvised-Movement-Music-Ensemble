@@ -18,54 +18,12 @@ var FPS          = 60;
 var ANIM_SECS    = 5;
 var ANIM_SPEED   = calcSpeed(ANIM_SECS);
 
-// Font sizes — power curve fitted through two calibration points:
-//   FONT_FULL_SIZE at FULL_H pixels  (tune with setfullsize)
-//   FONT_HALF_SIZE at FULL_H/2 pixels (tune with sethalfsize)
-// Exponent is derived automatically from those two values.
-var FULL_H         = 1080;
-var FONT_FULL_SIZE = 1500;   // fontsize at fullscreen
-var FONT_HALF_SIZE = 6;      // fontsize at half-screen (calibrated by user)
-var WIN_W          = 0;
-var WIN_H          = 0;
-var PENDING_W      = 0;
-var PENDING_H      = 0;
-var RESIZE_DEBOUNCE  = 45;
-var RESIZE_COUNTDOWN = 0;
+var NAME_FONT_SIZE   = 150;
+var HEADER_FONT_SIZE = 45;
+var TIMER_FONT_SIZE  = 37;
 
 function calcSpeed(secs) {
 	return 1 - Math.pow(0.01, 1 / (Math.max(0.1, secs) * FPS));
-}
-
-function fontExp() {
-	return Math.log(FONT_HALF_SIZE / FONT_FULL_SIZE) / Math.log(0.5);
-}
-
-function fontScale() {
-	return WIN_H > 0 ? Math.pow(WIN_H / FULL_H, fontExp()) : 1;
-}
-
-function nameFontSize() {
-	return WIN_H > 0 ? Math.max(4, Math.round(FONT_FULL_SIZE * fontScale())) : 72;
-}
-
-function headerFontSize() {
-	return WIN_H > 0 ? Math.max(4, Math.round(FONT_FULL_SIZE * 0.3 * fontScale())) : 48;
-}
-
-function timerFontSize() {
-	return WIN_H > 0 ? Math.max(4, Math.round(FONT_FULL_SIZE * 0.25 * fontScale())) : 38;
-}
-
-function setfullsize(n) {
-	FONT_FULL_SIZE = Math.max(1, parseFloat(n));
-}
-
-function sethalfsize(n) {
-	FONT_HALF_SIZE = Math.max(1, parseFloat(n));
-}
-
-function setfullh(n) {
-	FULL_H = Math.max(100, parseFloat(n));
 }
 
 function setanimsecs(n) {
@@ -73,29 +31,27 @@ function setanimsecs(n) {
 	ANIM_SPEED = calcSpeed(ANIM_SECS);
 }
 
-function setwindowsize(x1, y1, x2, y2) {
-	var w = x2 - x1;
-	var h = y2 - y1;
-	if (w !== PENDING_W || h !== PENDING_H) {
-		PENDING_W = w;
-		PENDING_H = h;
-		RESIZE_COUNTDOWN = RESIZE_DEBOUNCE;
-	}
+function setnamesize(n) {
+	NAME_FONT_SIZE = Math.max(1, parseInt(n));
+	applyFontSizes();
+}
+
+function setheadersize(n) {
+	HEADER_FONT_SIZE = Math.max(1, parseInt(n));
+	voice(V_MUSIC_HDR, "fontsize", HEADER_FONT_SIZE);
+	voice(V_DANCE_HDR, "fontsize", HEADER_FONT_SIZE);
+}
+
+function settimersize(n) {
+	TIMER_FONT_SIZE = Math.max(1, parseInt(n));
+	voice(V_TIMER, "fontsize", TIMER_FONT_SIZE);
 }
 
 function applyFontSizes() {
-	WIN_W = PENDING_W;
-	WIN_H = PENDING_H;
-	var ns = nameFontSize();
-	var hs = headerFontSize();
-	var ts = timerFontSize();
 	var names = Object.keys(STATE);
 	for (var i = 0; i < names.length; i++) {
-		voice(STATE[names[i]].voice, "fontsize", ns);
+		voice(STATE[names[i]].voice, "fontsize", NAME_FONT_SIZE);
 	}
-	voice(V_MUSIC_HDR, "fontsize", hs);
-	voice(V_DANCE_HDR, "fontsize", hs);
-	voice(V_TIMER,     "fontsize", ts);
 }
 
 var STATE      = {};
@@ -135,11 +91,6 @@ function bang() {
 
 function renderFrame() {
 	if (!initialized) { initStatic(); initialized = true; }
-
-	if (RESIZE_COUNTDOWN > 0) {
-		RESIZE_COUNTDOWN--;
-		if (RESIZE_COUNTDOWN === 0) applyFontSizes();
-	}
 
 	if (DIRTY) {
 		reconcile();
@@ -190,7 +141,7 @@ function reconcile() {
 			             cr: rgb[0], cg: rgb[1], cb: rgb[2],
 			             tcr: rgb[0], tcg: rgb[1], tcb: rgb[2] };
 			voice(v, "font", "Arial Black");
-			voice(v, "fontsize", nameFontSize());
+			voice(v, "fontsize", NAME_FONT_SIZE);
 			voice(v, "text", n);
 		}
 	}
@@ -237,19 +188,19 @@ function updateTimer(secs) {
 
 function initStatic() {
 	voice(V_MUSIC_HDR, "font", "Arial");
-	voice(V_MUSIC_HDR, "fontsize", headerFontSize());
+	voice(V_MUSIC_HDR, "fontsize", HEADER_FONT_SIZE);
 	voice(V_MUSIC_HDR, "text", "music");
 	voice(V_MUSIC_HDR, "position", -1.0, HEADER_Y, 0);
 	voice(V_MUSIC_HDR, "color", 0.55, 0.55, 0.55, 1);
 
 	voice(V_DANCE_HDR, "font", "Arial");
-	voice(V_DANCE_HDR, "fontsize", headerFontSize());
+	voice(V_DANCE_HDR, "fontsize", HEADER_FONT_SIZE);
 	voice(V_DANCE_HDR, "text", "dance");
 	voice(V_DANCE_HDR, "position", 0.0, HEADER_Y, 0);
 	voice(V_DANCE_HDR, "color", 0.55, 0.55, 0.55, 1);
 
 	voice(V_TIMER, "font", "Arial");
-	voice(V_TIMER, "fontsize", timerFontSize());
+	voice(V_TIMER, "fontsize", TIMER_FONT_SIZE);
 	voice(V_TIMER, "text", "--:--");
 	voice(V_TIMER, "position", 0, TIMER_Y, 0);
 	voice(V_TIMER, "color", 0.5, 0.9, 0.4, 1);
