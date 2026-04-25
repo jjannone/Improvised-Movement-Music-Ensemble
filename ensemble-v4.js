@@ -98,12 +98,14 @@ function generate() {
 }
 
 function sendPermList() {
+	// jit.cellblock: set COL ROW value  (col = horizontal, row = vertical)
+	// Layout: col 0 = MUSIC, col 1 = DANCE; rows = permutations
 	outlet(6, "clear");
 	outlet(6, "set", 0, 0, "MUSIC");
-	outlet(6, "set", 0, 1, "DANCE");
+	outlet(6, "set", 1, 0, "DANCE");
 	for (var i = 0; i < PERMUTATIONS.length; i++) {
-		outlet(6, "set", i + 1, 0, PERMUTATIONS[i].musicians.join(", "));
-		outlet(6, "set", i + 1, 1, PERMUTATIONS[i].dancers.join(", "));
+		outlet(6, "set", 0, i + 1, PERMUTATIONS[i].musicians.join(", "));
+		outlet(6, "set", 1, i + 1, PERMUTATIONS[i].dancers.join(", "));
 	}
 	outlet(6, "count", PERMUTATIONS.length);
 }
