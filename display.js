@@ -10,9 +10,9 @@ var V_POOL_SIZE  = 12;
 var MUSIC_X     = -1.0;
 var DANCE_X     =  0.0;
 var HEADER_Y    =  0.68;
-var NAMES_Y_TOP =  0.35;
-var NAME_STEP   =  0.32;
-var TIMER_Y     = -0.78;
+var NAMES_Y_TOP =  0.42;
+var NAME_STEP   =  0.25;
+var TIMER_Y     = -0.82;
 
 var FPS          = 60;
 var ANIM_SECS    = 5;
@@ -20,7 +20,9 @@ var ANIM_SPEED   = calcSpeed(ANIM_SECS);
 
 var NAME_FONT_SIZE   = 150;
 var HEADER_FONT_SIZE = 45;
-var TIMER_FONT_SIZE  = 37;
+var TIMER_FONT_SIZE  = 150;
+
+var ACTIVE = false;
 
 function calcSpeed(secs) {
 	return 1 - Math.pow(0.01, 1 / (Math.max(0.1, secs) * FPS));
@@ -33,7 +35,10 @@ function setanimsecs(n) {
 
 function setnamesize(n) {
 	NAME_FONT_SIZE = Math.max(1, parseInt(n));
-	applyFontSizes();
+	var names = Object.keys(STATE);
+	for (var i = 0; i < names.length; i++) {
+		voice(STATE[names[i]].voice, "fontsize", NAME_FONT_SIZE);
+	}
 }
 
 function setheadersize(n) {
@@ -47,11 +52,9 @@ function settimersize(n) {
 	voice(V_TIMER, "fontsize", TIMER_FONT_SIZE);
 }
 
-function applyFontSizes() {
-	var names = Object.keys(STATE);
-	for (var i = 0; i < names.length; i++) {
-		voice(STATE[names[i]].voice, "fontsize", NAME_FONT_SIZE);
-	}
+function setactive(n) {
+	ACTIVE = !!n;
+	updateTargetColors();
 }
 
 var STATE      = {};
@@ -115,7 +118,6 @@ function renderFrame() {
 function reconcile() {
 	var all = unique(MUSICIANS.concat(DANCERS));
 
-	// Remove departed
 	var names = Object.keys(STATE);
 	for (var i = 0; i < names.length; i++) {
 		var name = names[i];
@@ -126,7 +128,6 @@ function reconcile() {
 		}
 	}
 
-	// Add arrivals — start at computed target position
 	for (var j = 0; j < all.length; j++) {
 		var n = all[j];
 		if (!STATE[n]) {
@@ -136,7 +137,7 @@ function reconcile() {
 			var idx  = list.indexOf(n);
 			var ix   = col === "music" ? MUSIC_X : DANCE_X;
 			var iy   = NAMES_Y_TOP - idx * NAME_STEP;
-			var rgb  = roleColor(col);
+			var rgb  = nameColor(col, n);
 			STATE[n] = { voice: v, col: col, cx: ix, cy: iy, tx: ix, ty: iy,
 			             cr: rgb[0], cg: rgb[1], cb: rgb[2],
 			             tcr: rgb[0], tcg: rgb[1], tcb: rgb[2] };
@@ -168,9 +169,15 @@ function updateTargetColors() {
 	for (var i = 0; i < names.length; i++) {
 		var name = names[i];
 		var s = STATE[name];
-		var rgb = NEXT_NAMES.indexOf(name) !== -1 ? [1.0, 0.85, 0.0] : roleColor(s.col);
+		var rgb = nameColor(s.col, name);
 		s.tcr = rgb[0]; s.tcg = rgb[1]; s.tcb = rgb[2];
 	}
+}
+
+function nameColor(col, name) {
+	if (!ACTIVE) return [0.45, 0.45, 0.45];
+	if (NEXT_NAMES.indexOf(name) !== -1) return [1.0, 0.85, 0.0];
+	return roleColor(col);
 }
 
 function roleColor(col) {
