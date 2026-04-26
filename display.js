@@ -208,7 +208,7 @@ function initStatic() {
 
 	voice(V_TIMER, "font", "Arial");
 	voice(V_TIMER, "fontsize", TIMER_FONT_SIZE);
-	voice(V_TIMER, "anchor_x", 0.5);   // center-justify at x=0
+	voice(V_TIMER, "align", "center");   // center-justify at x=0
 	voice(V_TIMER, "text", "--:--");
 	voice(V_TIMER, "position", 0, TIMER_Y, 0);
 	voice(V_TIMER, "color", 0.5, 0.9, 0.4, 1);
