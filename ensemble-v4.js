@@ -99,13 +99,18 @@ function generate() {
 
 function sendPermList() {
 	// jit.cellblock: set COL ROW value  (col = horizontal, row = vertical)
-	// Layout: col 0 = MUSIC, col 1 = DANCE; rows = permutations
+	// Layout: col 0 = index, col 1 = MUSIC, col 2 = DANCE; rows = permutations
+	var nRows = PERMUTATIONS.length + 1; // +1 for header row
+	outlet(6, "rows", nRows);
+	outlet(6, "cols", 3);
 	outlet(6, "clear");
-	outlet(6, "set", 0, 0, "MUSIC");
-	outlet(6, "set", 1, 0, "DANCE");
+	outlet(6, "set", 0, 0, "#");
+	outlet(6, "set", 1, 0, "MUSIC");
+	outlet(6, "set", 2, 0, "DANCE");
 	for (var i = 0; i < PERMUTATIONS.length; i++) {
-		outlet(6, "set", 0, i + 1, PERMUTATIONS[i].musicians.join(", "));
-		outlet(6, "set", 1, i + 1, PERMUTATIONS[i].dancers.join(", "));
+		outlet(6, "set", 0, i + 1, String(i + 1));
+		outlet(6, "set", 1, i + 1, PERMUTATIONS[i].musicians.join(", "));
+		outlet(6, "set", 2, i + 1, PERMUTATIONS[i].dancers.join(", "));
 	}
 	outlet(6, "count", PERMUTATIONS.length);
 }
