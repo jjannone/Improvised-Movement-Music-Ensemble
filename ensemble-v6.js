@@ -358,8 +358,7 @@ function softStreakPenalty(roleState, nextPerm) {
 	return penalty;
 }
 
-function optimizeOrder(perms) {
-	if (perms.length <= 1) return perms;
+function greedyOrder(perms) {
 	var ordered   = [perms[0]];
 	var remaining = perms.slice(1);
 	while (remaining.length > 0) {
@@ -369,7 +368,6 @@ function optimizeOrder(perms) {
 		for (var i = 0; i < remaining.length; i++) {
 			var nxt         = remaining[i];
 			var transitions = transitionCount(cur, nxt);
-			// Only minimize transitions when a cap is in effect; cap=0 means no concern.
 			var score = (MAX_TRANSITIONS > 0) ? transitions : 0;
 			if (cur.musicians.length === 1 && nxt.musicians.length === 2) score -= 0.4;
 			if (cur.dancers.length   === 1 && nxt.dancers.length   === 2) score -= 0.4;
@@ -383,6 +381,33 @@ function optimizeOrder(perms) {
 		remaining.splice(bestIdx, 1);
 	}
 	return ordered;
+}
+
+// Hierarchical: over-cap pairs dominate, then total transitions.
+function orderingScore(ordered) {
+	var overCap = 0, total = 0;
+	for (var i = 0; i < ordered.length - 1; i++) {
+		var t = transitionCount(ordered[i], ordered[i + 1]);
+		total += t;
+		if (MAX_TRANSITIONS > 0 && t > MAX_TRANSITIONS) overCap++;
+	}
+	return overCap * 1e6 + total;
+}
+
+// Multi-restart greedy: greedy is myopic and paints itself into corners,
+// so try multiple starting perms and keep the ordering with the fewest
+// over-cap pairs (then lowest total transitions).
+function optimizeOrder(perms) {
+	if (perms.length <= 1) return perms;
+	var TRIALS = Math.min(perms.length, 30);
+	var best = null, bestScore = Infinity;
+	for (var t = 0; t < TRIALS; t++) {
+		var shuffled = shuffle(perms.slice());
+		var trial    = greedyOrder(shuffled);
+		var s        = orderingScore(trial);
+		if (s < bestScore) { bestScore = s; best = trial; }
+	}
+	return best;
 }
 
 // ── display ──────────────────────────────────────────────────
