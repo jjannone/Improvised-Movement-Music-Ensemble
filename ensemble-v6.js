@@ -27,7 +27,7 @@ var TOTAL_SECS      = 3600;
 var MAX_PERMS       = 0;   // 0 = no limit
 var MAX_REPEATS     = 0;   // 0 = no limit (consecutive same role)
 var COUNTDOWN_START = 10;
-var MIN_TRANSITIONS = true; // when true, run optimizeOrder to minimize role-changes between sections
+var MAX_TRANSITIONS = 0;   // 0 = no limit; >0 caps role changes per adjacent section pair
 
 var PERMUTATIONS   = [];
 var CURRENT_IDX    = -1;
@@ -74,7 +74,7 @@ function setduration(n)       { TOTAL_SECS       = Math.max(60, parseInt(n) * 60
 function setcountdownstart(n) { COUNTDOWN_START  = Math.max(1, parseInt(n)); }
 function setmaxperms(n)       { MAX_PERMS        = Math.max(0, parseInt(n)); }
 function setmaxrepeats(n)     { MAX_REPEATS      = Math.max(0, parseInt(n)); }
-function setmintransitions(n) { MIN_TRANSITIONS  = !!parseInt(n); }
+function setmaxtransitions(n) { MAX_TRANSITIONS  = Math.max(0, parseInt(n)); }
 
 // ── generation ───────────────────────────────────────────────
 
@@ -111,7 +111,7 @@ function generate() {
 		PERMUTATIONS = selectPerms(PERMUTATIONS, MAX_PERMS, active);
 	}
 
-	if (MIN_TRANSITIONS) PERMUTATIONS = optimizeOrder(PERMUTATIONS);
+	if (MAX_TRANSITIONS > 0) PERMUTATIONS = optimizeOrder(PERMUTATIONS);
 
 	SECS_PER_PERM  = Math.max(1, Math.round(TOTAL_SECS / PERMUTATIONS.length));
 	CURRENT_IDX    = 0;
@@ -370,12 +370,15 @@ function optimizeOrder(perms) {
 		var roleState = buildRoleState(ordered);
 		var bestIdx = 0, bestScore = Infinity;
 		for (var i = 0; i < remaining.length; i++) {
-			var nxt   = remaining[i];
-			var score = roleChanges(cur, nxt);
+			var nxt        = remaining[i];
+			var transitions = roleChanges(cur, nxt);
+			var score      = transitions;
 			if (cur.musicians.length === 1 && nxt.musicians.length === 2) score -= 0.4;
 			if (cur.dancers.length   === 1 && nxt.dancers.length   === 2) score -= 0.4;
 			score += softStreakPenalty(roleState, nxt) * 0.6;
 			if (MAX_REPEATS > 0) score += repeatsPenalty(roleState, nxt) * 1000;
+			// Hard cap on transitions per adjacent pair.
+			if (MAX_TRANSITIONS > 0 && transitions > MAX_TRANSITIONS) score += 1000;
 			// Prevent adjacent mirrors (non-adjacent mirrors are fine).
 			if (permKey(nxt) === mirrorKey(cur)) score += 3.0;
 			if (score < bestScore) { bestScore = score; bestIdx = i; }
