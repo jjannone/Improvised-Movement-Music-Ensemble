@@ -111,7 +111,7 @@ function generate() {
 		PERMUTATIONS = selectPerms(PERMUTATIONS, MAX_PERMS, active);
 	}
 
-	if (MAX_TRANSITIONS > 0) PERMUTATIONS = optimizeOrder(PERMUTATIONS);
+	PERMUTATIONS = optimizeOrder(PERMUTATIONS);
 
 	SECS_PER_PERM  = Math.max(1, Math.round(TOTAL_SECS / PERMUTATIONS.length));
 	CURRENT_IDX    = 0;
